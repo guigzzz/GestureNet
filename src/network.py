@@ -32,12 +32,26 @@ class GestureNetwork():
         self.fitted = True
         return self.model.fit(np.asarray(x), np.asarray(y), validation_split = val_split, epochs = epochs, batch_size = batch)
 
-    def save(self, path):
+    def save(self, path, class_labels = None):
         self.model.save(path)
+        if class_labels:
+            from h5py import File, special_dtype
+            with File(path, 'r+') as f:
+                class_labels = np.array(list(class_labels), dtype = object)
+                dt = special_dtype(vlen = str)
+                dset = f.create_dataset('labels', data = class_labels, dtype = dt)
+                print(dset)
 
-    def load(self, path):
+    def load(self, path, load_labels = False):
         self.model = load_model(path)
         self.loaded = True
+
+        if load_labels:
+            self.ret_labels = True
+            from h5py import File
+            with File(path, 'r') as f:
+                if 'labels' in f.keys():
+                    self.labels = list(f['labels'].value)
 
     def one_hot(self, vec):
         if type(vec[0]) is list:
@@ -53,7 +67,10 @@ class GestureNetwork():
         if self.loaded or self.fitted:
             if len(x.shape) < 4:
                 x = [x]
-            return self.model.predict_on_batch(np.asarray(x))
+            if self.ret_labels:
+                return self.labels[np.argmax(self.model.predict_on_batch(np.asarray(x)))]
+            else:
+                return self.model.predict_on_batch(np.asarray(x))
         else:
             print('model isnt fitted or a pre-trained model hasnt been loaded')
             sys.exit(1)

@@ -1,13 +1,12 @@
 import cv2
-from skimage.io import imshow
-import matplotlib.pyplot as plt
-import os
 from src.network import GestureNetwork
 import sys
+import numpy as np
 
 net = GestureNetwork()
-net.load(sys.argv[1])
-
+net.load(sys.argv[1], load_labels = True)
+labels = net.labels
+print(labels)
 
 webcam = cv2.VideoCapture(0)
 ok, frame = webcam.read()
